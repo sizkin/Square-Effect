@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en_US">
+<head>
+  <meta charset="utf-8">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/knockout/2.2.1/knockout-min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <title>Square Effect with knockoutjs</title>
+  <style type="text/css">
+  .paper-wall-switch {
+    overflow: hidden;
+    position: absolute;
+    top: 0px; left: 0px;
+    height: 968px;
+    width: 1424px;
+    z-index: 10;
+  }
+
+  .walls {
+    position: absolute;
+    height: 170px;
+    width: 170px;
+  }
+
+  .next {
+    /*background: url() no-repeat;*/
+    background-color: #1e860d;
+    z-index: 1;
+  }
+
+  .btn-next {
+    position: absolute;
+    z-index: 99;
+  }
+  </style>
+</head>
+<body>
+  <div id="main">
+    <div id="paper_wall_switch" class="paper-wall-switch" data-bind="foreach: walls">
+      <div class="walls" data-bind="
+        attr: { 
+          id: 'w_'+$data.id, 
+          style: 'background-color:'+$data.bg()+');'+
+                 'background-position:'+$data.bgX()+'px '+$data.bgY()+'px;'+
+                 'top:'+$data.y()+'px; left:'+$data.x()+'px;'
+        }"></div>
+    </div>
+    <div class="next paper-wall-switch"></div>
+    <a href="javascript:void(0)" class="btn-next" data-bind="click: squareFadeOut">Run the effect</a>
+  </div>
+
+  <script type="text/javascript">
+  var walls = [
+    {
+      id: 1,
+      bg: '#1e860d'
+    },
+    {
+      id: 2,
+      bg: '#ffa13f'
+    }
+  ];
+
+  var squaredWall = function(id, x, y, bgPositionX, bgPositionY, bgUrl) {
+    this.id = id;
+    this.bg = ko.observable(bgUrl);
+    this.x = ko.observable(x);
+    this.y = ko.observable(y);
+    this.bgX = ko.observable(bgPositionX);
+    this.bgY = ko.observable(bgPositionY);
+  };
+
+  var wallSwitchViewModel = function(option) {
+    var self = this;
+    var defaultOption = {
+      boxSize: 100,
+      fadeOutGatterX: 0,
+      fadeOutGatterY: 0,
+      duration: 800
+    };
+    var option = (typeof option == 'object') ? option : defaultOption;
+    self.squareSize = ko.observable(option.boxSize);
+    self.fadeOutGatterX = ko.observable(option.fadeOutGatterX);
+    self.fadeOutGatterY = ko.observable(option.fadeOutGatterY);
+    self.duration = ko.observable(option.duration);
+    self.rowCnt = ko.observable(0);
+    self.colCnt = ko.observable(0);
+    self.totalPieces = ko.computed(function() {
+      var _size, _ww, _wh, row, col;
+      _size = self.squareSize();
+      _ww = $('#paper_wall_switch').width();
+      _wh = $('#paper_wall_switch').height();
+      row = Math.ceil(_ww/_size);
+      col = Math.ceil(_wh/_size);
+
+      self.rowCnt(row);
+      self.colCnt(col);
+      return (row*col);
+    }, self);
+    self.walls = ko.observableArray([]);
+  };
+
+  wallSwitchViewModel.prototype.makeInSquare = function(bg) {
+    var self = this;
+    var _totalPieces = self.totalPieces()
+    ,   _size = self.squareSize()
+    ,   _rows = self.rowCnt()
+    ,   _cols = self.colCnt()
+    ,   _bg = bg
+    ,   squaresPosition = []
+    ,   backgroundsPosition = [];
+
+    self.walls.removeAll();
+
+    var _cnt = 1;
+    for ( var i = 0; i < _rows; i++ ) {
+      for ( var j = 0; j < _cols; j++ ) {
+        var __x = i*_size
+        ,   __y = j*_size
+        ,   _bgX = __x*-1
+        ,   _bgY = __y*-1;
+
+        squaresPosition.push({x: __x, y: __y});
+        backgroundsPosition.push({x: _bgX, y: _bgY});
+        self.walls.push(new squaredWall(_cnt, __x, __y, _bgX, _bgY, _bg));
+
+        _cnt++;
+      }
+    }
+  };
+
+  wallSwitchViewModel.prototype.squareFadeOut = function() {
+    var self = this;
+    var _totalPieces = self.totalPieces();
+    var _size = self.colCnt()-1;
+    var _duration = self.duration();
+    var iTime = (self.fadeOutGatterX()*self.fadeOutGatterY()*self.rowCnt())/2;
+    var movingGroups = {};
+
+    for ( var i = 0; i < _totalPieces; i++ ) {
+      movingGroups[i] = [];
+      for ( var j = 0; j <= i; j++ ) {
+        movingGroups[i].push( (i+1)+(j*_size) );
+      }
+      _totalPieces--;
+    }
+
+    // $('#paper_wall_switch').animate({
+    //   left: "+=1424px"
+    // }, 3500, function() {
+    //   $(this).hide();
+    // });
+
+    $.each(movingGroups, function($index, $data) {
+      setTimeout(function() {   
+        $($data).each(function($index2, $data2) {
+          move($data2);
+        });
+      }, (_duration*$index));
+    });
+
+
+    function move(id) {
+      $('#w_'+id).animate({
+        top: "-="+self.fadeOutGatterY()+"px",
+        left: "-="+self.fadeOutGatterX()+"px",
+        // opacity: 0
+      }, _duration, function() {
+        $(this).hide();
+      });
+    }
+  };
+
+
+  $(function () {
+    walls_app = new wallSwitchViewModel({
+      boxSize: 170,
+      fadeOutGatterX: 8,
+      fadeOutGatterY: 6,
+      duration: 460
+    });
+    ko.applyBindings(walls_app, $('#main').get(0));
+
+    walls_app.makeInSquare(walls[1].bg);
+  });
+  </script>
+</body>
+</html>
