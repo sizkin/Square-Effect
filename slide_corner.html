@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en_US">
+<head>
+	<meta charset="utf-8">
+	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+	<title>Slides corner</title>
+	<style type="text/css">
+	#first {
+		position: absolute;
+		top: 252px;
+		left: 40px;
+		width: 68px;
+		height: 98px;
+		z-index: 99;
+		background-color: red;
+	}
+	#first_img {
+		display: block;
+		position: absolute;
+		top: 205px;
+		left: 22px;
+		width: 489px;
+		height: 159px;
+		opacity: 0;
+		z-index: -1;
+	}
+	.squares {
+		position: absolute;
+		opacity: 0;
+	}
+	</style>
+</head>
+<body>
+	<div id="main">
+		<div id="first" class=""></div>
+		<div id="first_img" class="">
+			<img src="http://bhmagic.project.focus-global.com/skin/frontend/default/default/images/focus/home/en/3.png" alt="">
+		</div>
+	</div>
+
+	<script type="text/javascript">
+	// requestAnimationFrame polyfill
+	(function() {
+		var lastTime = 0;
+		var vendors = ['ms', 'moz', 'webkit', 'o'];
+		for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+			window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+			window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame'] 
+									   || window[vendors[x]+'CancelRequestAnimationFrame'];
+		}
+	 
+		if (!window.requestAnimationFrame)
+			window.requestAnimationFrame = function(callback, element) {
+				var currTime = new Date().getTime();
+				var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+				var id = window.setTimeout(function() { callback(currTime + timeToCall); }, 
+				  timeToCall);
+				lastTime = currTime + timeToCall;
+				return id;
+			};
+	 
+		if (!window.cancelAnimationFrame)
+			window.cancelAnimationFrame = function(id) {
+				clearTimeout(id);
+			};
+	}());
+	var silde_corner = function(id, option) {
+		var self = this;
+		var defaultOption = {
+			background: $(id).find('img').eq(0).get(0).src,
+			boxSize: 100,
+			fadeOutGatterX: 0,
+			fadeOutGatterY: 0,
+			duration: 1000,
+			fps: 60
+		};
+		var option = ( typeof option == 'object' ) ? option : defaultOption;
+		self.elem = id;
+		self.boxSize = (option.boxSize) ? option.boxSize : defaultOption.boxSize;
+		self.fadeOutGatterX = (option.fadeOutGatterX) ? option.fadeOutGatterX : defaultOption.fadeOutGatterX;
+		self.fadeOutGatterY = (option.fadeOutGatterY) ? option.fadeOutGatterY : defaultOption.fadeOutGatterY;
+		self.duration = (option.duration) ? option.duration : defaultOption.duration;
+		self.fps = (option.fps) ? option.fps : defaultOption.fps;
+		self.background = (option.background) ? option.background : defaultOption.background;
+		self.rowCnt = 0;
+		self.colCnt = 0;
+		self.totalPieces = 0;
+		self.walls = [];
+
+		self.makeInSquare(self.background);
+	};
+	silde_corner.prototype.calcTotalPieces = function() {
+		var self = this;
+		var _size, _ww, _wh, row, col;
+		_size = self.boxSize;
+		_ww = $(self.elem).width();
+		_wh = $(self.elem).height();
+		row = Math.ceil(_ww/_size);
+		col = Math.ceil(_wh/_size);
+
+		self.rowCnt = row;
+		self.colCnt = col;
+		return (row*col);
+	};
+	silde_corner.prototype.makeInSquare = function(bg) {
+		var self = this;
+		var _totalPieces = self.totalPieces = self.calcTotalPieces()
+		,   _size = self.boxSize
+		,   _rows = self.rowCnt
+		,   _cols = self.colCnt
+		,   _bg = bg
+		,   squaresPosition = []
+		,   backgroundsPosition = [];
+		var squaredWall = function() {};
+		var _cnt, i, j, __x, __y, _bgX, _bgY;
+		var squaresElem = null;
+
+		self.walls = [];
+
+		_cnt = 1;
+		for ( i = 0; i < _rows; i++ ) {
+			for ( j = 0; j < _cols; j++ ) {
+				__x = i*_size
+				__y = j*_size
+				_bgX = __x*-1
+				_bgY = __y*-1;
+
+				squaresPosition.push({x: __x, y: __y});
+				backgroundsPosition.push({x: _bgX, y: _bgY});
+				self.walls.push(new squaredWall(_cnt, __x, __y, _bgX, _bgY, _bg));
+				squaresElem = null;
+				squaresElem = $('<div>');
+				squaresElem
+					.attr('id', 'w_'+_cnt)
+					.addClass('squares')
+					.css({
+						'background-image': 'url('+_bg+')',
+						'background-position': _bgX+'px '+_bgY+'px',
+						'background-position-x': _bgX+'px',
+						'background-position-y': _bgY+'px',
+						'background-repeat': 'no-repeat',
+						'top': __y+'px',
+						'left': __x+'px',
+						'width': self.boxSize+'px',
+						'height': self.boxSize+'px',
+						'box-shadow': '1px 1px 8px rgba(255, 255, 255, 0.4333)'
+					});
+
+				$(self.elem).append(squaresElem);
+
+				_cnt++;
+			}
+		}
+
+		var squaredWall = function(id, x, y, bgPositionX, bgPositionY, bgUrl) {
+			this.id = id;
+			this.bg = bgUrl;
+			this.x = x;
+			this.y = y;
+			this.bgX = bgPositionX;
+			this.bgY = bgPositionY;
+		}
+	};	
+	silde_corner.prototype.slideFadeIn = function() {
+		var self = this;
+		var _totalPieces = self.totalPieces;
+		var _size = self.colCnt-1;
+		var _fps = self.fps;
+		var _duration = self.duration / _fps;
+		var iTime = (self.fadeOutGatterX*self.fadeOutGatterY*self.rowCnt)/2;
+		var movingGroups = {};
+
+		for ( var i = 0; i < _totalPieces; i++ ) {
+			movingGroups[i] = [];
+			for ( var j = 0; j <= i; j++ ) {
+				movingGroups[i].push( (i+1)+(j*_size) );
+			}
+			_totalPieces--;
+			if ( i == _totalPieces-1 ) {
+				wait_movingGroups(movingGroups);
+			}
+		}
+		function wait_movingGroups(movingGroups) {
+			$(self.elem).css({
+				'opacity': 1,
+				'z-index': 100
+			});
+			$(self.elem).find('img').eq(0).hide();
+			$.each(movingGroups, function($index, $data) {
+				setTimeout(function() {
+					$($data).each(function($index2, $data2) {
+						move($data2);
+					});
+				}, (_duration*$index));
+			});
+		};
+
+		function move(id) {
+			$('#w_'+id).animate({
+				display: "block",
+				top: "+="+self.fadeOutGatterY+"px",
+				left: "+="+self.fadeOutGatterX+"px",
+				opacity: 1
+			}, _duration, function() {
+				$('.squares').css({
+					'box-shadow': '0 none'
+				});
+			});
+		}
+	};
+	silde_corner.prototype.slideFadeOut = function() {
+		var self = this;
+		var _totalPieces = self.totalPieces;
+		var _size = self.colCnt-1;
+		var _fps = self.fps;
+		var _duration = self.duration / _fps;
+		var iTime = (self.fadeOutGatterX*self.fadeOutGatterY*self.rowCnt)/2;
+		var movingGroups = {};
+
+		for ( var i = 0; i < _totalPieces; i++ ) {
+			movingGroups[i] = [];
+			for ( var j = 0; j <= i; j++ ) {
+				movingGroups[i].push( (i+1)+(j*_size) );
+			}
+			_totalPieces--;
+		}
+
+		$.each(movingGroups, function($index, $data) {
+			setTimeout(function() {   
+				$($data).each(function($index2, $data2) {
+					move($data2);
+				});
+			}, (_duration*$index));
+		});
+
+
+		function move(id) {
+			$('#w_'+id).animate({
+				top: "-="+self.fadeOutGatterY+"px",
+				left: "-="+self.fadeOutGatterX+"px",
+				// opacity: 0
+			}, _duration, function() {
+				$(this).hide();
+			});
+		}
+	};
+
+
+$(function () {
+	walls_app = new silde_corner('#first_img', {
+		boxSize: 50,
+		fadeOutGatterX: 0,
+		fadeOutGatterY: 0,
+		duration: 100,
+		fps: 1
+	});
+
+});
+</script>
+</body>
+</html>
